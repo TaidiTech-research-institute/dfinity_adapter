@@ -53,8 +53,7 @@ func (srv *HttpService) createRouter() {
 
 type JobReq struct {
 	Id     string `json:"id"`
-	JobId  string `json:"jobId"`
-	Result Result `json:"result"`
+	Result Data `json:"data"`
 }
 
 type resp struct {
@@ -79,26 +78,18 @@ func (srv *HttpService) Call(c *gin.Context) {
 	fmt.Printf("Get In adapter call\n")
 	if err := c.BindJSON(&req); err != nil {
 		log.Println("invalid JSON payload",err)
-		errorJob(c, http.StatusBadRequest, req.JobId, "Invalid JSON payload")
+		errorJob(c, http.StatusBadRequest, req.Id, "Invalid JSON payload")
 		return
 	}
 	fmt.Println("id:",req.Id)
-	fmt.Println("JobId:",req.JobId)
-	fmt.Println("To:",req.Result.data.To)
-	fmt.Println("From:",req.Result.data.From)
-	fmt.Println("price",req.Result.data.Result)
+	fmt.Println("To:",req.Result.To)
+	fmt.Println("From:",req.Result.From)
+	fmt.Println("price",req.Result.Result)
 
 
-	//body, err := ioutil.ReadAll(c.Request.Body)
+	//body, _ := ioutil.ReadAll(c.Request.Body)
     //strBody := string(body)
     //fmt.Println(strBody)
-	//if err := json.Unmarshal([]byte(strBody), &req); err == nil {
-	//	fmt.Println("id:",req.Id)
-	//	fmt.Println("JobId:",req.JobId)
-	//	fmt.Println("data:",req.Result.data)
-	//} else {
-	//	fmt.Println(err)
-	//}
 
 
 //
@@ -110,20 +101,18 @@ func (srv *HttpService) Call(c *gin.Context) {
 	//	errorJob(c, http.StatusBadRequest, req.JobID, err.Error())
 	//	return
 	//}
-	fmt.Printf("Get data From link node %+v\n", req.Id)
 	res, err := srv.Handler(Request{
-		TokenType: req.Result.data.From,
-		Price: uint64(req.Result.data.Result),
+		TokenType: req.Result.From,
+		Price: uint64(req.Result.Result*10000),
 	})
 
 	if err != nil {
 		log.Println(err)
-		errorJob(c, http.StatusInternalServerError, req.JobId, err.Error())
+		errorJob(c, http.StatusInternalServerError, req.Id, err.Error())
 		return
 	}
-
 	c.JSON(http.StatusOK, resp{
-		JobRunID:   req.JobId,
+		JobRunID:   req.Id,
 		StatusCode: http.StatusOK,
 		Status:     "success",
 		Data:       res,

@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/gin-gonic/gin"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"testing"
@@ -37,17 +36,17 @@ func dfinityServerCall(c *gin.Context) {
 		return
 	}
 
-	pubkey := req.PublicKey
+	pubkey := req.Arg.PublicKey
 	content := signatureContent{
-		TokenType: req.TokenType,
-		TimeStamp: req.TimeStamp,
-		Price:     req.Price,
+		TokenType: req.Arg.TokenType,
+		Timestamp: req.Arg.Timestamp,
+		Price:     req.Arg.Price,
 	}
 
 	msg, _ := json.Marshal(content)
 	msgHash := util.Sha256(msg)
 
-	verified := secp256k1.VerifySignature(pubkey, msgHash, req.Signature[:64])
+	verified := secp256k1.VerifySignature(pubkey, msgHash, req.Arg.Signature[:64])
 	if !verified {
 		log.Println("Can not verify the signature.")
 		c.JSON(http.StatusInternalServerError, dfinityResp{
@@ -112,12 +111,12 @@ func TestSignature(t *testing.T) {
 	content := signatureContent{
 		TokenType: "ETH",
 		Price:     10000,
-		TimeStamp: 0,
+		Timestamp: 0,
 	}
 	msg, _ := json.Marshal(content)
-	fmt.Println("msg:",hexutil.Encode(msg))
+	fmt.Println("msg:", hexutil.Encode(msg))
 	msgH := util.Sha256(msg)
-	fmt.Println("msg hash:",hexutil.Encode(msgH))
+	fmt.Println("msg hash:", hexutil.Encode(msgH))
 	signature, _ := secp256k1.Sign(msgH, seckey)
 
 	fmt.Println("signature", hexutil.Encode(signature))
@@ -156,11 +155,36 @@ func TestMockAdapter(t *testing.T) {
 	router.Run(":2333")
 }
 
-func mockAdaptorCall(c *gin.Context)  {
-	resp := c.Request
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil{
-		fmt.Println(err)
+func mockAdaptorCall(c *gin.Context) {
+	var req testRequest
+	//resp := c.Request
+	//body, err := ioutil.ReadAll(resp.Body)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//fmt.Println(string(body))
+	//json.Unmarshal([]byte(string(body)),req)
+	//fmt.Println(req)
+	if err := c.BindJSON(&req); err != nil {
+		log.Println("invalid JSON payload", err)
+		errorJob(c, http.StatusBadRequest, req.JobId, "Invalid JSON payload")
+		return
 	}
-	fmt.Println(string(body))
+	fmt.Println(req)
+}
+
+type testRequest struct {
+	JobId  string `json:"jobId"`
+	Id     string `json:"id"`
+	Result testResult `json:"result"`
+}
+
+type testResult struct {
+	Data testData `json:"data"`
+}
+
+type testData struct {
+	To     string  `json:"to"`
+	From   string  `json:"from"`
+	Result float64 `json:"result"`
 }

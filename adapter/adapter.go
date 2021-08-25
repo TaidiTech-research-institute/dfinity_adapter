@@ -15,9 +15,9 @@ type Request struct {
 	Price     uint64 `json:"price"`
 }
 
-type Result struct {
-	data Data `json:"data"`
-}
+//type Result struct {
+//	Data Data `json:"data"`
+//}
 
 type Data struct {
 	To     string  `json:"to"`
@@ -25,17 +25,23 @@ type Data struct {
 	Result float64 `json:"result"`
 }
 type Proposal struct {
-	Signature []byte `json:"signature"`
-	PublicKey []byte `json:"public_key"`
+	Canister string `json:"canister"`
+	Function string `json:"function"`
+	Arg      Args   `json:"args"`
+}
+
+type Args struct {
+	Signature []byte `json:"signature"` // 64 byte
+	PublicKey []byte `json:"pub_key"`   //
 	TokenType string `json:"token_type"`
 	Price     uint64 `json:"price"`
-	TimeStamp uint64 `json:"time_stamp"`
+	Timestamp uint64 `json:"timestamp"`
 }
 
 type signatureContent struct {
 	TokenType string `json:"token_type"`
 	Price     uint64 `json:"price"`
-	TimeStamp uint64 `json:"time_stamp"`
+	Timestamp uint64 `json:"timestamp"`
 }
 
 type dfinityAdaptor struct {
@@ -44,13 +50,13 @@ type dfinityAdaptor struct {
 	api    *API
 }
 
-func NewdfinityAdaptor(url string, port string, priKey, pubKey string) (*dfinityAdaptor, error) {
+func NewdfinityAdaptor(url string, priKey, pubKey string) (*dfinityAdaptor, error) {
 	strPrikey, _ := hexutil.Decode(priKey)
 	strPubkey, _ := hexutil.Decode(pubKey)
 	return &dfinityAdaptor{
 		prikey: strPrikey,
 		pubkey: strPubkey,
-		api:    newAPI(url, port),
+		api:    newAPI(url),
 	}, nil
 }
 
@@ -67,13 +73,21 @@ func (adapter *dfinityAdaptor) Handle(req Request) (interface{}, error) {
 			return nil, err
 		}
 		fmt.Println("Sign message successfully")
+
 		body, err := adapter.api.post(Proposal{
-			Signature: signature,
-			Price:     req.Price,
-			TimeStamp: timestamp,
-			TokenType: req.TokenType,
-			PublicKey: adapter.pubkey,
+			Canister: "ywrdt-7aaaa-aaaah-qaaaa-cai",
+			Function: "provide_price",
+			Arg: Args{
+				Signature: signature,
+				Price:     req.Price,
+				Timestamp: timestamp,
+				TokenType: req.TokenType,
+				PublicKey: adapter.pubkey,
+			},
 		})
+
+		fmt.Println("body:", body)
+
 		if err != nil {
 			fmt.Errorf("Can not post dfinity api: body:%v, error: %v", body, err)
 			return body, err
@@ -93,6 +107,5 @@ func (adapter *dfinityAdaptor) sign(content signatureContent) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("signature:", signatiure)
 	return signatiure, nil
 }
