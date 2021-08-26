@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+	"time"
 )
 
 type Handler func(req Request) (interface{}, error)
@@ -85,6 +86,7 @@ func (srv *HttpService) Call(c *gin.Context) {
 	fmt.Println("To:",req.Result.To)
 	fmt.Println("From:",req.Result.From)
 	fmt.Println("price",req.Result.Result)
+	fmt.Println("time:",time.Now())
 
 	go func() {
 			srv.Handler(Request{

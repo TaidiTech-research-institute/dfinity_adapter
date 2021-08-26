@@ -1,0 +1,27 @@
+{
+    "name": "",
+    "initiators": [
+        {
+            "id": 12,
+            "jobSpecId": "18a0b81d-ca75-4996-a033-fe4c958cfc9a",
+            "type": "cron",
+            "params": {
+                "schedule": "CRON_TZ=UTC */1 * * * *"
+            }
+        }
+    ],
+    "tasks": [
+        {
+            "jobSpecId": "18a0b81dca754996a033fe4c958cfc9a",
+            "type": "bridge-coinmarketcap",
+            "params": {
+                "to": "USD",
+                "from": "ETH"
+            }
+        },
+        {
+            "jobSpecId": "18a0b81dca754996a033fe4c958cfc9a",
+            "type": "dfinity_adapter"
+        }
+    ]
+}
