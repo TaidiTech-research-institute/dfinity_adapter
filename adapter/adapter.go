@@ -31,8 +31,8 @@ type Proposal struct {
 }
 
 type Args struct {
-	Signature []byte `json:"signature"` // 64 byte
-	PublicKey []byte `json:"pub_key"`   //
+	Signature string `json:"signature"` // 64 byte
+	PublicKey string `json:"pub_key"`   //
 	TokenType string `json:"token_type"`
 	Price     uint64 `json:"price"`
 	Timestamp uint64 `json:"timestamp"`
@@ -78,15 +78,13 @@ func (adapter *dfinityAdaptor) Handle(req Request) (interface{}, error) {
 			Canister: "ywrdt-7aaaa-aaaah-qaaaa-cai",
 			Function: "provide_price",
 			Arg: Args{
-				Signature: signature,
+				Signature: hexutil.Encode(signature[:64]),
 				Price:     req.Price,
 				Timestamp: timestamp,
 				TokenType: req.TokenType,
-				PublicKey: adapter.pubkey,
+				PublicKey: hexutil.Encode(adapter.pubkey),
 			},
 		})
-
-		fmt.Println("body:", body)
 
 		if err != nil {
 			fmt.Errorf("Can not post dfinity api: body:%v, error: %v", body, err)

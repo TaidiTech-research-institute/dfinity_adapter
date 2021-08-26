@@ -86,35 +86,28 @@ func (srv *HttpService) Call(c *gin.Context) {
 	fmt.Println("From:",req.Result.From)
 	fmt.Println("price",req.Result.Result)
 
+	go func() {
+			srv.Handler(Request{
+			TokenType: req.Result.From,
+			Price: uint64(req.Result.Result*10000),
+		})
+	}()
 
-	//body, _ := ioutil.ReadAll(c.Request.Body)
-    //strBody := string(body)
-    //fmt.Println(strBody)
-
-
-//
-//	println(c.Request.Header)
-//	println(string(body))
-
-	//if err := validateRequest(&req); err != nil {
+	//res, err := srv.Handler(Request{
+	//	TokenType: req.Result.From,
+	//	Price: uint64(req.Result.Result*10000),
+	//})
+	//
+	//if err != nil {
 	//	log.Println(err)
-	//	errorJob(c, http.StatusBadRequest, req.JobID, err.Error())
+	//	errorJob(c, http.StatusInternalServerError, req.Id, err.Error())
 	//	return
 	//}
-	res, err := srv.Handler(Request{
-		TokenType: req.Result.From,
-		Price: uint64(req.Result.Result*10000),
-	})
-
-	if err != nil {
-		log.Println(err)
-		errorJob(c, http.StatusInternalServerError, req.Id, err.Error())
-		return
-	}
 	c.JSON(http.StatusOK, resp{
 		JobRunID:   req.Id,
 		StatusCode: http.StatusOK,
 		Status:     "success",
-		Data:       res,
+		Data:       req,
 	})
+	fmt.Println("Deal with the response successfully!")
 }

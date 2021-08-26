@@ -13,13 +13,11 @@ import (
 	"log"
 	"net/http"
 	"testing"
-	"time"
 )
 
 func TestMockDfinityServer(t *testing.T) {
 	router := gin.Default()
 	router.POST("/", dfinityServerCall)
-
 	router.Run(":2334")
 }
 
@@ -35,8 +33,9 @@ func dfinityServerCall(c *gin.Context) {
 		})
 		return
 	}
-
-	pubkey := req.Arg.PublicKey
+	fmt.Println(req)
+	pubkey,_:= hexutil.Decode(req.Arg.PublicKey)
+	signature,_ := hexutil.Decode(req.Arg.Signature)
 	content := signatureContent{
 		TokenType: req.Arg.TokenType,
 		Timestamp: req.Arg.Timestamp,
@@ -46,7 +45,7 @@ func dfinityServerCall(c *gin.Context) {
 	msg, _ := json.Marshal(content)
 	msgHash := util.Sha256(msg)
 
-	verified := secp256k1.VerifySignature(pubkey, msgHash, req.Arg.Signature[:64])
+	verified := secp256k1.VerifySignature(pubkey, msgHash, signature[:64])
 	if !verified {
 		log.Println("Can not verify the signature.")
 		c.JSON(http.StatusInternalServerError, dfinityResp{
@@ -106,7 +105,8 @@ type dfinityResp struct {
 //}
 
 func TestSignature(t *testing.T) {
-	pubkey, seckey := generateKeyPair()
+	seckey,_ := hexutil.Decode("0x65b69e7356c2e8c68f1be482b9b3db9c33196d11c988b3db37ca6953adaf10a8")
+	pubkey,_  := hexutil.Decode( "0x049d68bdf6a02aab91f9eb17af2930267007284d8984c90f7bd2a7c54edbee965ce0a53b660b5fc43fe69dc87d2aed1c5eeffe41e7fbc23242bba6685df1143ecb")
 
 	content := signatureContent{
 		TokenType: "ETH",
@@ -119,14 +119,13 @@ func TestSignature(t *testing.T) {
 	fmt.Println("msg hash:", hexutil.Encode(msgH))
 	signature, _ := secp256k1.Sign(msgH, seckey)
 
-	fmt.Println("signature", hexutil.Encode(signature))
-	fmt.Println("public key:", hexutil.Encode(pubkey))
+	fmt.Println("signature", signature)
+	fmt.Println("public key:", pubkey)
 	//pub,err := secp256k1.RecoverPubkey(msgH, signature)
 	//if err != nil{
 	//	fmt.Println("can not recover public key From signature,error:",err)
 	//}
 	//fmt.Printf("The pubkey is :%v \n The pub   is :%v \n",hexutil.Encode(pubkey),hexutil.Encode(pub))
-	fmt.Printf("private key len: %v\n public key len: %v\n sig len: %v\n", len(seckey), len(pubkey), len(signature))
 	verified := secp256k1.VerifySignature(pubkey, msgH, signature[:64])
 	fmt.Println("past the verify?", verified)
 }
@@ -142,49 +141,4 @@ func generateKeyPair() (pubkey, privkey []byte) {
 	copy(privkey[32-len(blob):], blob)
 
 	return pubkey, privkey
-}
-
-func TestTime(t *testing.T) {
-	fmt.Println(time.Now().Unix())
-	fmt.Println(uint64(time.Now().Unix()))
-}
-
-func TestMockAdapter(t *testing.T) {
-	router := gin.Default()
-	router.POST("", mockAdaptorCall)
-	router.Run(":2333")
-}
-
-func mockAdaptorCall(c *gin.Context) {
-	var req testRequest
-	//resp := c.Request
-	//body, err := ioutil.ReadAll(resp.Body)
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//fmt.Println(string(body))
-	//json.Unmarshal([]byte(string(body)),req)
-	//fmt.Println(req)
-	if err := c.BindJSON(&req); err != nil {
-		log.Println("invalid JSON payload", err)
-		errorJob(c, http.StatusBadRequest, req.JobId, "Invalid JSON payload")
-		return
-	}
-	fmt.Println(req)
-}
-
-type testRequest struct {
-	JobId  string `json:"jobId"`
-	Id     string `json:"id"`
-	Result testResult `json:"result"`
-}
-
-type testResult struct {
-	Data testData `json:"data"`
-}
-
-type testData struct {
-	To     string  `json:"to"`
-	From   string  `json:"from"`
-	Result float64 `json:"result"`
 }

@@ -24,17 +24,20 @@ func newAPI(url string) *API {
 func (api *API) post(pro Proposal) (string, error) {
 	bytesData, _ := json.Marshal(pro)
 	req, _ := http.NewRequest("POST", api.url, bytes.NewReader(bytesData))
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 	resp, err := api.client.Do(req)
 	if err != nil {
 		fmt.Println("Can not propose request, error:",err)
 		return "", err
 	}
+	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	fmt.Println("post body:",string(body))
+	fmt.Println("resp body:",string(body))
+
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println(resp.StatusCode)
+		requestBody,_ := ioutil.ReadAll(resp.Request.Body)
+		fmt.Println(resp.StatusCode,resp.Status,resp.Request.URL,requestBody)
 		return string(body), errors.New("Fail To post the price To dfinity server")
 	}
 	return string(body), nil
 }
-
